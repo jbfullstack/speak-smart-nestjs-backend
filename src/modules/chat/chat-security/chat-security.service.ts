@@ -6,7 +6,7 @@ import {
 import { readFileSync } from 'fs';
 import * as path from 'path';
 import { ChatSecuritySession } from './chat-security-session';
-import { ChatOpenaiConnectorService } from '../openai/chat-openai-connector/chat-openai-connector.service';
+import { ChatOpenaiConnectorService } from '../../openai/chat-openai-connector/chat-openai-connector.service';
 
 @Injectable()
 export class ChatSecurityService {
@@ -24,6 +24,7 @@ export class ChatSecurityService {
       process.cwd(),
       'src',
       'modules',
+      'chat',
       'chat-security',
       'prompt',
       'security.prompt',
@@ -45,7 +46,7 @@ export class ChatSecurityService {
     );
 
     const aiMessage = result.content;
-    this.logger.log(`Security control aiMessage: ${aiMessage}`);
+    this.logger.warn(`Security control aiMessage: ${aiMessage}`);
     if (aiMessage === 'OK') {
       return true;
     } else {

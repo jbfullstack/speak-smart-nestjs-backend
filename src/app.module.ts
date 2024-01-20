@@ -4,12 +4,12 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { SpeakerModule } from './modules/speaker/speaker.module';
 import { SpeechToTextService } from './modules/openai/speech-to-text/speech-to-text.service';
-import { ChatManagerModule } from './modules/chat-manager/chat-manager.module';
-import { ChatSecurityModule } from './modules/chat-security/chat-security.module';
+import { ChatManagerModule } from './modules/chat/chat-manager/chat-manager.module';
+import { ChatSecurityModule } from './modules/chat/chat-security/chat-security.module';
 import { ChatOpenaiConnectorModule } from './modules/openai/chat-openai-connector/chat-openai-connector.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), SpeakerModule, ChatManagerModule, ChatSecurityModule, ChatOpenaiConnectorModule],
+  imports: [ConfigModule.forRoot(), SpeakerModule, ChatManagerModule],
   controllers: [AppController],
   providers: [AppService, SpeechToTextService],
 })

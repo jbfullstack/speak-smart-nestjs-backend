@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { OpenAIApi, Configuration } from 'openai';
 import { AxiosResponse } from 'axios';
+import { ChatSecurityService } from '../chat/chat-security/chat-security.service';
 
 const DEFAULT_MALE_VOICE = 'onyx';
 const DEFAULT_FEMALE_VOICE = 'shimmer';
@@ -23,6 +24,7 @@ export class SpeakerService {
   constructor(
     private readonly chatService: ChatGptApiService,
     private readonly textToSpeechService: TextToSpeechService,
+    private readonly chatSecurity: ChatSecurityService,
   ) {
     const configuration = new Configuration({
       organization: process.env.ORGANIZATION_ID,
@@ -48,20 +50,33 @@ export class SpeakerService {
         data,
       );
 
-    const textToSpeechInput: TextToSpeechInputDto = {
-      model: 'tts-1',
-      voice: this.getSPeakerVoice(data.voice),
-      input: gptResponse.aiMessage,
-    };
-
-    const audioStream = await this.textToSpeechService.textToSpeech(
-      textToSpeechInput,
+    const isAiMessageAcceptable = await this.chatSecurity.controleMessage(
+      gptResponse.aiMessage,
     );
+    if (isAiMessageAcceptable) {
+      this.logger.log(`AI response message is accetable`);
+      // const textToSpeechInput: TextToSpeechInputDto = {
+      //   model: 'tts-1',
+      //   voice: this.getSPeakerVoice(data.voice),
+      //   input: gptResponse.aiMessage,
+      // };
 
-    if (isRecording) {
-      this.storeAudioFile(audioStream);
+      // const audioStream = await this.textToSpeechService.textToSpeech(
+      //   textToSpeechInput,
+      // );
+
+      // if (isRecording) {
+      //   this.storeAudioFile(audioStream);
+      // }
+      // return audioStream.data;
+
+      return gptResponse.aiMessage;
+    } else {
+      this.logger.log(
+        `AI response message is inacceptable : ${gptResponse.aiMessage}`,
+      );
+      return 'we are sorry, an inacceptable message was generated.';
     }
-    return audioStream.data;
   }
 
   async storeAudioFile(audioStream: AxiosResponse<any, any>) {

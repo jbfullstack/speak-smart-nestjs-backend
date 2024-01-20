@@ -4,6 +4,7 @@ import { ChatSecurityService } from './chat-security.service';
 
 @Module({
   controllers: [ChatSecurityController],
-  providers: [ChatSecurityService]
+  providers: [ChatSecurityService],
+  exports: [ChatSecurityService],
 })
 export class ChatSecurityModule {}

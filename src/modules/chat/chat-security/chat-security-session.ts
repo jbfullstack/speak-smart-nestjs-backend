@@ -27,6 +27,10 @@ export class ChatSecuritySession {
   addSecurityControlMessage(message: string) {
     this.logger.log(`ChatSecuritySession message: ${message}`);
     this.chatHistory = this.chatHistory.slice(0, 1);
+
+    this.chatHistory.map((baseMessage) =>
+      this.logger.log(`baseMessage ${JSON.stringify(baseMessage)}`),
+    );
     this.chatHistory.push(new HumanMessage(message));
   }
 }

@@ -55,6 +55,33 @@ export class SpeakerController {
     return sessionIds;
   }
 
+  // @HttpCode(201)
+  // @Post('/user/:user/chat-session/:chatSessionId')
+  // async chatWithSpeaker(
+  //   @Param('user') userName,
+  //   @Param('chatSessionId') uuid,
+  //   @Body(new ValidationPipe({ transform: true }))
+  //   data: ChatWithSpeakerInputDTO,
+  //   @Res() res: Response,
+  // ) {
+  //   const audioStream = await this.speakerService.getSpeakerResponse(
+  //     uuid,
+  //     userName,
+  //     data,
+  //   );
+
+  //   // TODO: temp
+  //   res.status(HttpStatus.OK);
+  //   res.append(audioStream);
+
+  //   // res.setHeader('Content-Type', 'audio/mpeg; charset=binary');
+  //   // res.charset = 'binary';
+  //   // res.status(HttpStatus.OK);
+
+  //   // // Pipe the audio stream directly to the response
+  //   // audioStream.pipe(res);
+  // }
+
   @HttpCode(201)
   @Post('/user/:user/chat-session/:chatSessionId')
   async chatWithSpeaker(
@@ -62,21 +89,23 @@ export class SpeakerController {
     @Param('chatSessionId') uuid,
     @Body(new ValidationPipe({ transform: true }))
     data: ChatWithSpeakerInputDTO,
-    @Res() res: Response,
   ) {
     const audioStream = await this.speakerService.getSpeakerResponse(
       uuid,
       userName,
       data,
     );
-    // this.audioGateway.streamAudioToClient(audioStream);
-    // return { message: 'Streaming audio' };
 
-    res.setHeader('Content-Type', 'audio/mpeg; charset=binary');
-    res.charset = 'binary';
-    res.status(HttpStatus.OK);
+    // TODO: temp
+    return {
+      message: audioStream,
+    };
 
-    // Pipe the audio stream directly to the response
-    audioStream.pipe(res);
+    // res.setHeader('Content-Type', 'audio/mpeg; charset=binary');
+    // res.charset = 'binary';
+    // res.status(HttpStatus.OK);
+
+    // // Pipe the audio stream directly to the response
+    // audioStream.pipe(res);
   }
 }

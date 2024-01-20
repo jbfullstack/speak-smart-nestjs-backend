@@ -5,7 +5,7 @@ import {
   Post,
   ValidationPipe,
 } from '@nestjs/common';
-import { CreateSpeakerSessionInputDTO } from '../speaker/model/speaker.dto';
+import { CreateSpeakerSessionInputDTO } from '../../speaker/model/speaker.dto';
 
 @Controller('chat-manager')
 export class ChatManagerController {
