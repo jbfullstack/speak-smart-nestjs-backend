@@ -7,14 +7,15 @@ import {
 } from 'langchain/schema';
 import { v4 as uuidv4 } from 'uuid';
 
-export class ChatSecuritySession {
-  private readonly logger: Logger = new Logger(ChatSecuritySession.name);
+export class ChatSingleSession {
+  private readonly logger: Logger = new Logger(ChatSingleSession.name);
   readonly uuid: string;
-  readonly sessionName: string = 'security-session';
+  readonly sessionName: string;
   chatHistory: BaseMessage[];
 
-  constructor(systemMessage: string) {
+  constructor(systemMessage: string, sessionName: string) {
     this.uuid = uuidv4();
+    this.sessionName = sessionName;
     this.chatHistory = [];
 
     this.addSystemMessage(systemMessage);
@@ -24,13 +25,9 @@ export class ChatSecuritySession {
     this.chatHistory.push(new SystemMessage(message));
   }
 
-  addSecurityControlMessage(message: string) {
-    this.logger.log(`ChatSecuritySession message: ${message}`);
+  addSingleMessage(message: string) {
+    this.logger.log(`ChatSingleSession message: ${message}`);
     this.chatHistory = this.chatHistory.slice(0, 1);
-
-    this.chatHistory.map((baseMessage) =>
-      this.logger.log(`baseMessage ${JSON.stringify(baseMessage)}`),
-    );
     this.chatHistory.push(new HumanMessage(message));
   }
 }

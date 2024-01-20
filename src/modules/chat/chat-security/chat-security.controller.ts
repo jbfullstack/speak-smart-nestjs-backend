@@ -6,7 +6,6 @@ import {
   Post,
   ValidationPipe,
 } from '@nestjs/common';
-import { CreateSessionInputDto } from '../../openai/chat-gpt-api/model/chat-gpt.dto';
 import { ChatSecurityService } from './chat-security.service';
 import { ControlInputDto } from './model/controle.dto';
 

@@ -5,17 +5,20 @@ import {
 } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import * as path from 'path';
-import { ChatSecuritySession } from './chat-security-session';
+import { ChatSingleSession } from '../chat-single-session';
 import { ChatOpenaiConnectorService } from '../../openai/chat-openai-connector/chat-openai-connector.service';
 
 @Injectable()
 export class ChatSecurityService {
   private readonly logger: Logger = new Logger(ChatSecurityService.name);
-  private readonly chatSecurityHistory: ChatSecuritySession;
+  private readonly chatSecurityHistory: ChatSingleSession;
   private readonly chatGptConnector: ChatOpenaiConnectorService;
 
   constructor() {
-    this.chatSecurityHistory = new ChatSecuritySession(this.loadPromptFile());
+    this.chatSecurityHistory = new ChatSingleSession(
+      this.loadPromptFile(),
+      'security-session',
+    );
     this.chatGptConnector = new ChatOpenaiConnectorService();
   }
 
@@ -40,17 +43,17 @@ export class ChatSecurityService {
   }
 
   async controleMessage(message: string): Promise<boolean> {
-    this.chatSecurityHistory.addSecurityControlMessage(message);
+    this.chatSecurityHistory.addSingleMessage(message);
     const result = await this.chatGptConnector.predictMessages(
       this.chatSecurityHistory.chatHistory,
     );
 
     const aiMessage = result.content;
-    this.logger.warn(`Security control aiMessage: ${aiMessage}`);
-    if (aiMessage === 'OK') {
+    this.logger.warn(`Security control aiMessage: \n > ${aiMessage}`);
+    if (aiMessage === 'Security Check Passed: OK') {
       return true;
     } else {
-      this.logger.warn(`Security control failed: ${aiMessage}`);
+      this.logger.error(`Security control failed: \n > ${aiMessage}`);
       return false;
     }
   }

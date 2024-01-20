@@ -11,6 +11,8 @@ import * as ffmpeg from 'fluent-ffmpeg';
 import { OpenAIApi, Configuration } from 'openai';
 import { AxiosResponse } from 'axios';
 import { ChatSecurityService } from '../chat/chat-security/chat-security.service';
+import { ChatPersonalityService } from '../chat/chat-personality/chat-personality.service';
+import { ChatPersonality } from '../chat/chat-personality/model/chat-personality';
 
 const DEFAULT_MALE_VOICE = 'onyx';
 const DEFAULT_FEMALE_VOICE = 'shimmer';
@@ -25,12 +27,14 @@ export class SpeakerService {
     private readonly chatService: ChatGptApiService,
     private readonly textToSpeechService: TextToSpeechService,
     private readonly chatSecurity: ChatSecurityService,
+    private readonly chatPersonality: ChatPersonalityService,
   ) {
     const configuration = new Configuration({
       organization: process.env.ORGANIZATION_ID,
       apiKey: process.env.OPENAI_API_KEY,
     });
     this.openAiApi = new OpenAIApi(configuration);
+    this.chatPersonality.initChatWithPersonality(ChatPersonality.Friendly);
   }
   // TODO: use postgres
   getSPeakerVoice(voice: string): string {
@@ -50,8 +54,11 @@ export class SpeakerService {
         data,
       );
 
+    const personalizedResponse =
+      await this.chatPersonality.rewriteWithPersonality(gptResponse.aiMessage);
+
     const isAiMessageAcceptable = await this.chatSecurity.controleMessage(
-      gptResponse.aiMessage,
+      personalizedResponse,
     );
     if (isAiMessageAcceptable) {
       this.logger.log(`AI response message is accetable`);
@@ -70,7 +77,7 @@ export class SpeakerService {
       // }
       // return audioStream.data;
 
-      return gptResponse.aiMessage;
+      return personalizedResponse;
     } else {
       this.logger.log(
         `AI response message is inacceptable : ${gptResponse.aiMessage}`,

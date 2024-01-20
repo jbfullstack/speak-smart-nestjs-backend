@@ -5,14 +5,14 @@ import { ChatGptApiModule } from 'src/modules/openai/chat-gpt-api/chat-gpt-api.m
 import { TextToSpeechModule } from 'src/modules/openai/text-to-speech/text-to-speech.module';
 import { AudioGateway } from './audio-gateway-websocket';
 import { ChatSecurityModule } from '../chat/chat-security/chat-security.module';
-import { SpeakerPersonalityModule } from '../speaker-personality/speaker-personality.module';
+import { ChatPersonalityModule } from '../chat/chat-personality/chat-personality.module';
 
 @Module({
   imports: [
     TextToSpeechModule,
     ChatGptApiModule,
     ChatSecurityModule,
-    SpeakerPersonalityModule,
+    ChatPersonalityModule,
   ],
   providers: [SpeakerService, AudioGateway],
   controllers: [SpeakerController],

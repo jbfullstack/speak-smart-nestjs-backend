@@ -7,9 +7,10 @@ import { SpeechToTextService } from './modules/openai/speech-to-text/speech-to-t
 import { ChatManagerModule } from './modules/chat/chat-manager/chat-manager.module';
 import { ChatSecurityModule } from './modules/chat/chat-security/chat-security.module';
 import { ChatOpenaiConnectorModule } from './modules/openai/chat-openai-connector/chat-openai-connector.module';
+import { ChatPersonalityModule } from './modules/chat/chat-personality/chat-personality.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), SpeakerModule, ChatManagerModule],
+  imports: [ConfigModule.forRoot(), SpeakerModule, ChatManagerModule, ChatPersonalityModule],
   controllers: [AppController],
   providers: [AppService, SpeechToTextService],
 })
