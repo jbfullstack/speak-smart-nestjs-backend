@@ -21,9 +21,6 @@ export class ChatSession {
     this.chatHistory = [];
 
     if (systemMessage && systemMessage.length) {
-      this.logger.debug(
-        `ChatSession ${this.uuid} intializes with systemMessage:\n ${systemMessage}`,
-      );
       this.addSystemMessage(systemMessage);
     }
   }
