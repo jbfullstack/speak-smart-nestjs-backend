@@ -1,33 +1,22 @@
 import {
-  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
-  NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
-import { ChatHistoryManager } from '../openai/chat-gpt-api/model/chat-history-manager';
-import { existsSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import * as path from 'path';
-import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatSecuritySession } from './chat-security-session';
-
-const DEFAULT_TEMPERATURE = 1;
-const DEFAULT_MODEL = 'gpt-3.5-turbo';
+import { ChatOpenaiConnectorService } from '../openai/chat-openai-connector/chat-openai-connector.service';
 
 @Injectable()
 export class ChatSecurityService {
   private readonly logger: Logger = new Logger(ChatSecurityService.name);
   private readonly chatSecurityHistory: ChatSecuritySession;
-  private readonly chat: ChatOpenAI;
+  private readonly chatGptConnector: ChatOpenaiConnectorService;
 
   constructor() {
     this.chatSecurityHistory = new ChatSecuritySession(this.loadPromptFile());
-    this.chat = new ChatOpenAI({
-      temperature: DEFAULT_TEMPERATURE,
-      openAIApiKey: process.env.OPENAI_API_KEY,
-      modelName: DEFAULT_MODEL,
-    });
+    this.chatGptConnector = new ChatOpenaiConnectorService();
   }
 
   private loadPromptFile(): string {
@@ -51,7 +40,7 @@ export class ChatSecurityService {
 
   async controleMessage(message: string): Promise<boolean> {
     this.chatSecurityHistory.addSecurityControlMessage(message);
-    const result = await this.chat.predictMessages(
+    const result = await this.chatGptConnector.predictMessages(
       this.chatSecurityHistory.chatHistory,
     );
 

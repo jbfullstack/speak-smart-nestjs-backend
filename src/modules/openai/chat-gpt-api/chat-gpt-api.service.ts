@@ -14,23 +14,17 @@ import {
   GetChatGptOutputDTO,
 } from './model/chat-gpt.dto';
 import { SessionType } from './model/chat-session-response.interface';
-
-const DEFAULT_TEMPERATURE = 1;
-const DEFAULT_MODEL = 'gpt-3.5-turbo';
+import { ChatOpenaiConnectorService } from '../chat-openai-connector/chat-openai-connector.service';
 
 @Injectable()
 export class ChatGptApiService {
   private readonly logger: Logger = new Logger(ChatGptApiService.name);
   private readonly chatHistory: ChatHistoryManager;
-  private readonly chat: ChatOpenAI;
+  private readonly chat: ChatOpenaiConnectorService;
 
   constructor() {
     this.chatHistory = new ChatHistoryManager();
-    this.chat = new ChatOpenAI({
-      temperature: DEFAULT_TEMPERATURE,
-      openAIApiKey: process.env.OPENAI_API_KEY,
-      modelName: DEFAULT_MODEL,
-    });
+    this.chat = new ChatOpenaiConnectorService();
   }
 
   async startNewSession(data: CreateSessionInputDto) {
