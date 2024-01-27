@@ -1,7 +1,15 @@
-import { Injectable, Logger, Res } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  Res,
+} from '@nestjs/common';
 import { ChatGptApiService } from 'src/modules/openai/chat-gpt-api/chat-gpt-api.service';
 import { TextToSpeechService } from 'src/modules/openai/text-to-speech/text-to-speech.service';
-import { ChatWithSpeakerInputDTO } from './model/speaker.dto';
+import {
+  ChatWithSpeakerInputDTO,
+  CreateSpeakerSessionInputDTO,
+} from './model/speaker.dto';
 import { TextToSpeechInputDto } from 'src/modules/openai/text-to-speech/models/text-to-speech-input.dto';
 
 import * as fs from 'fs';
@@ -11,8 +19,7 @@ import * as ffmpeg from 'fluent-ffmpeg';
 import { OpenAIApi, Configuration } from 'openai';
 import { AxiosResponse } from 'axios';
 import { ChatSecurityService } from '../chat/chat-security/chat-security.service';
-import { ChatPersonalityService } from '../chat/chat-personality/chat-personality.service';
-import { ChatPersonality } from '../chat/chat-personality/model/chat-personality';
+import { ChatPersonality } from './structures/chat-personality';
 
 const DEFAULT_MALE_VOICE = 'onyx';
 const DEFAULT_FEMALE_VOICE = 'shimmer';
@@ -20,32 +27,68 @@ const DEFAULT_FEMALE_VOICE = 'shimmer';
 @Injectable()
 export class SpeakerService {
   private readonly logger: Logger = new Logger(SpeakerService.name);
-  // private readonly isRecording: boolean = false;
   private readonly openAiApi: OpenAIApi;
 
   constructor(
     private readonly chatService: ChatGptApiService,
     private readonly textToSpeechService: TextToSpeechService,
     private readonly chatSecurity: ChatSecurityService,
-    private readonly chatPersonality: ChatPersonalityService,
   ) {
     const configuration = new Configuration({
       organization: process.env.ORGANIZATION_ID,
       apiKey: process.env.OPENAI_API_KEY,
     });
     this.openAiApi = new OpenAIApi(configuration);
-    this.chatPersonality.initChatWithPersonality(ChatPersonality.Friendly);
   }
   // TODO: use postgres
   getSPeakerVoice(voice: string): string {
     return voice;
   }
 
-  async getSpeakerResponse(
+  buildSessionData(data: CreateSpeakerSessionInputDTO) {
+    const sessionData = {
+      ...data,
+      systemMessage: this.getSystemMessageWithPersonality(
+        data.userName,
+        data.speakerCharacter,
+      ),
+    };
+
+    return sessionData;
+  }
+
+  // TODO: Use mapper
+  getSystemMessageWithPersonality(userName: string, personality: string) {
+    let prompt = this.loadPromptFile();
+    const chatPersonality = ChatPersonality.getInstance();
+    return `${prompt}. ${chatPersonality.getPersonalityDescription(
+      personality,
+    )}.My username is '${userName}'. Call me '${userName}' when you need to address me or if I ask you my name.`;
+  }
+
+  private loadPromptFile(): string {
+    let filePath = path.join(
+      process.cwd(),
+      'src',
+      'modules',
+      'speaker',
+      'prompt',
+      'speaker.prompt',
+    );
+
+    try {
+      return fs.readFileSync(filePath, 'utf8');
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `ChatSecurityService can't load security prompt: ${error}`,
+      );
+    }
+  }
+
+  async getWrittenSpeakerResponse(
     uuid: string,
     userName: string,
     data: ChatWithSpeakerInputDTO,
-    isRecording = false,
   ) {
     const gptResponse =
       await this.chatService.getAiModelResponseFromUserSession(
@@ -54,36 +97,47 @@ export class SpeakerService {
         data,
       );
 
-    const personalizedResponse =
-      await this.chatPersonality.rewriteWithPersonality(gptResponse.aiMessage);
+    const isAiMessageAcceptable = await this.chatSecurity.controleMessage(
+      gptResponse.aiMessage,
+    );
+    return isAiMessageAcceptable
+      ? gptResponse.aiMessage
+      : 'we are sorry, an inacceptable message was generated.';
+  }
+
+  async getSpokenpeakerResponse(
+    uuid: string,
+    userName: string,
+    data: ChatWithSpeakerInputDTO,
+    isRecording: boolean = false,
+  ) {
+    const gptResponse =
+      await this.chatService.getAiModelResponseFromUserSession(
+        uuid,
+        userName,
+        data,
+      );
 
     const isAiMessageAcceptable = await this.chatSecurity.controleMessage(
-      personalizedResponse,
+      gptResponse.aiMessage,
     );
-    if (isAiMessageAcceptable) {
-      this.logger.log(`AI response message is accetable`);
-      // const textToSpeechInput: TextToSpeechInputDto = {
-      //   model: 'tts-1',
-      //   voice: this.getSPeakerVoice(data.voice),
-      //   input: gptResponse.aiMessage,
-      // };
+    const textToGenerate = isAiMessageAcceptable
+      ? gptResponse.aiMessage
+      : 'we are sorry, an inacceptable message was generated.';
+    const textToSpeechInput: TextToSpeechInputDto = {
+      model: 'tts-1',
+      voice: this.getSPeakerVoice(data.voice),
+      input: textToGenerate,
+    };
 
-      // const audioStream = await this.textToSpeechService.textToSpeech(
-      //   textToSpeechInput,
-      // );
+    const audioStream = await this.textToSpeechService.textToSpeech(
+      textToSpeechInput,
+    );
 
-      // if (isRecording) {
-      //   this.storeAudioFile(audioStream);
-      // }
-      // return audioStream.data;
-
-      return personalizedResponse;
-    } else {
-      this.logger.log(
-        `AI response message is inacceptable : ${gptResponse.aiMessage}`,
-      );
-      return 'we are sorry, an inacceptable message was generated.';
+    if (isRecording) {
+      this.storeAudioFile(audioStream);
     }
+    return audioStream.data;
   }
 
   async storeAudioFile(audioStream: AxiosResponse<any, any>) {

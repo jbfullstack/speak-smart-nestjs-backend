@@ -12,7 +12,7 @@ import {
 import { SpeakerService } from './speaker.service';
 
 import { Response } from 'express';
-import { AudioGateway } from './audio-gateway-websocket';
+
 import {
   ChatWithSpeakerInputDTO,
   CreateSpeakerSessionInputDTO,
@@ -25,7 +25,6 @@ export class SpeakerController {
   constructor(
     private readonly speakerService: SpeakerService,
     private readonly gptService: ChatGptApiService,
-    private readonly audioGateway: AudioGateway,
   ) {}
 
   @HttpCode(201)
@@ -34,18 +33,8 @@ export class SpeakerController {
     @Body(new ValidationPipe({ transform: true }))
     data: CreateSpeakerSessionInputDTO,
   ) {
-    const sessionData = {
-      ...data,
-      systemMessage: this.getSystemMessageFromCharacter(
-        data.userName,
-        data.speakerCharacter,
-      ),
-    };
+    const sessionData = this.speakerService.buildSessionData(data);
     return this.gptService.startNewSession(sessionData);
-  }
-  // TODO: Use mapper
-  getSystemMessageFromCharacter(userName: string, speakerCharacter: string) {
-    return `Be short and clear. You must always start answering by 'Hello dear ${userName}'`;
   }
 
   @HttpCode(200)
@@ -55,57 +44,44 @@ export class SpeakerController {
     return sessionIds;
   }
 
-  // @HttpCode(201)
-  // @Post('/user/:user/chat-session/:chatSessionId')
-  // async chatWithSpeaker(
-  //   @Param('user') userName,
-  //   @Param('chatSessionId') uuid,
-  //   @Body(new ValidationPipe({ transform: true }))
-  //   data: ChatWithSpeakerInputDTO,
-  //   @Res() res: Response,
-  // ) {
-  //   const audioStream = await this.speakerService.getSpeakerResponse(
-  //     uuid,
-  //     userName,
-  //     data,
-  //   );
-
-  //   // TODO: temp
-  //   res.status(HttpStatus.OK);
-  //   res.append(audioStream);
-
-  //   // res.setHeader('Content-Type', 'audio/mpeg; charset=binary');
-  //   // res.charset = 'binary';
-  //   // res.status(HttpStatus.OK);
-
-  //   // // Pipe the audio stream directly to the response
-  //   // audioStream.pipe(res);
-  // }
-
   @HttpCode(201)
-  @Post('/user/:user/chat-session/:chatSessionId')
-  async chatWithSpeaker(
+  @Post('/user/:user/verbal-chatting/:chatSessionId')
+  async verbalChatting(
     @Param('user') userName,
     @Param('chatSessionId') uuid,
     @Body(new ValidationPipe({ transform: true }))
     data: ChatWithSpeakerInputDTO,
+    @Res() res: Response,
   ) {
-    const audioStream = await this.speakerService.getSpeakerResponse(
+    const audioStream = await this.speakerService.getSpokenpeakerResponse(
       uuid,
       userName,
       data,
     );
 
-    // TODO: temp
+    res.setHeader('Content-Type', 'audio/mpeg; charset=binary');
+    res.charset = 'binary';
+    res.status(HttpStatus.OK);
+
+    audioStream.pipe(res);
+  }
+
+  @HttpCode(201)
+  @Post('/user/:user/text-chatting/:chatSessionId')
+  async textChatting(
+    @Param('user') userName,
+    @Param('chatSessionId') uuid,
+    @Body(new ValidationPipe({ transform: true }))
+    data: ChatWithSpeakerInputDTO,
+  ) {
+    const speakerAnswer = await this.speakerService.getWrittenSpeakerResponse(
+      uuid,
+      userName,
+      data,
+    );
+
     return {
-      message: audioStream,
+      message: speakerAnswer,
     };
-
-    // res.setHeader('Content-Type', 'audio/mpeg; charset=binary');
-    // res.charset = 'binary';
-    // res.status(HttpStatus.OK);
-
-    // // Pipe the audio stream directly to the response
-    // audioStream.pipe(res);
   }
 }
