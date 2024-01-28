@@ -12,7 +12,7 @@ export class CreateSpeakerSessionInputDTO {
 
   @IsString()
   @IsNotEmpty()
-  speakerCharacter: string;
+  personality: string;
 }
 
 export class TextChatWithSpeakerInputDTO {

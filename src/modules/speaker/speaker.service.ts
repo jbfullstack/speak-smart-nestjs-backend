@@ -71,7 +71,7 @@ export class SpeakerService {
       ...data,
       systemMessage: this.getSystemMessageWithPersonality(
         data.userName,
-        data.speakerCharacter,
+        data.personality,
       ),
     };
 
