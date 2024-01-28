@@ -61,9 +61,14 @@ export class SpeakerService {
   getSystemMessageWithPersonality(userName: string, personality: string) {
     let prompt = this.loadPromptFile();
     const chatPersonality = ChatPersonality.getInstance();
-    return `${prompt}. ${chatPersonality.getPersonalityDescription(
-      personality,
-    )}.My username is '${userName}'. Call me '${userName}' when you need to address me or if I ask you my name.`;
+    // replace personality in the prompt
+    prompt = prompt.replace(
+      /###PERSONALITY###/g,
+      chatPersonality.getPersonalityDescription(personality),
+    );
+    // replace the username in the prompt
+    prompt = prompt.replace(/###USERNAME###/g, userName);
+    return prompt;
   }
 
   buildSessionData(data: CreateSpeakerSessionInputDTO) {
