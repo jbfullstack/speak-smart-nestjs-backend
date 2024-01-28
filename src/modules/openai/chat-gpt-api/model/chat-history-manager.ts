@@ -1,6 +1,10 @@
-import { SessionType } from './chat-session-response.interface';
 import { ChatSession } from './chat-session';
-import { Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 export class ChatHistoryManager {
   private readonly logger: Logger = new Logger(ChatHistoryManager.name);
@@ -28,8 +32,23 @@ export class ChatHistoryManager {
     return newSession;
   }
 
-  getChatSession(uuid: string): ChatSession | undefined {
-    return this.chatSessions.find((session) => session.uuid === uuid);
+  getChatSession(uuid: string, username: string): ChatSession {
+    const foundSession = this.chatSessions.find(
+      (session) => session.uuid === uuid,
+    );
+    if (!foundSession) {
+      this.logger.warn(`ChatSession ${uuid} does not exist`);
+      throw new NotFoundException(`ChatSession ${uuid} does not exist`);
+    }
+
+    if (foundSession.userName !== username) {
+      this.logger.warn(`ChatSession ${uuid} is not owned by ${username}`);
+      throw new ForbiddenException(
+        `${username} is not the owener of chatSession ${uuid}`,
+      );
+    }
+
+    return foundSession;
   }
 
   getChatSessionsList(

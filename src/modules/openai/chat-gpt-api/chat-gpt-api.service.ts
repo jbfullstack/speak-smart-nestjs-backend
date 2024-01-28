@@ -7,7 +7,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ChatHistoryManager } from './model/chat-history-manager';
-import { ChatOpenAI } from 'langchain/chat_models/openai';
 import {
   CreateSessionInputDto,
   GetChatGptInputDTO,
@@ -40,22 +39,10 @@ export class ChatGptApiService {
 
   async getAiModelResponseFromUserSession(
     uuid: string,
-    userName: string,
+    username: string,
     data: GetChatGptInputDTO,
   ) {
-    let userSession = this.chatHistory.getChatSession(uuid);
-
-    if (!userSession) {
-      this.logger.warn(`ChatSession ${uuid} does not exist`);
-      throw new NotFoundException(`ChatSession ${uuid} does not exist`);
-    }
-
-    if (userSession.userName !== userName) {
-      this.logger.warn(`ChatSession ${uuid} is not owned by ${userName}`);
-      throw new ForbiddenException(
-        `${userName} is not the owener of chatSession ${uuid}`,
-      );
-    }
+    let userSession = this.chatHistory.getChatSession(uuid, username);
 
     // update chat history with human data
     userSession.addHumanMessage(data.message);

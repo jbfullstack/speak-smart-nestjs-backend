@@ -15,7 +15,13 @@ export class CreateSpeakerSessionInputDTO {
   speakerCharacter: string;
 }
 
-export class ChatWithSpeakerInputDTO {
+export class TextChatWithSpeakerInputDTO {
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+}
+
+export class VerbalChatWithSpeakerInputDTO {
   @IsString()
   @IsNotEmpty()
   message: string;

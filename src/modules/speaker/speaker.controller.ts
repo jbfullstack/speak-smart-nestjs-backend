@@ -14,8 +14,9 @@ import { SpeakerService } from './speaker.service';
 import { Response } from 'express';
 
 import {
-  ChatWithSpeakerInputDTO,
+  TextChatWithSpeakerInputDTO,
   CreateSpeakerSessionInputDTO,
+  VerbalChatWithSpeakerInputDTO,
 } from './model/speaker.dto';
 import { ChatGptApiService } from '../openai/chat-gpt-api/chat-gpt-api.service';
 
@@ -50,7 +51,7 @@ export class SpeakerController {
     @Param('user') userName,
     @Param('chatSessionId') uuid,
     @Body(new ValidationPipe({ transform: true }))
-    data: ChatWithSpeakerInputDTO,
+    data: VerbalChatWithSpeakerInputDTO,
     @Res() res: Response,
   ) {
     const audioStream = await this.speakerService.getSpokenpeakerResponse(
@@ -72,7 +73,7 @@ export class SpeakerController {
     @Param('user') userName,
     @Param('chatSessionId') uuid,
     @Body(new ValidationPipe({ transform: true }))
-    data: ChatWithSpeakerInputDTO,
+    data: TextChatWithSpeakerInputDTO,
   ) {
     const speakerAnswer = await this.speakerService.getWrittenSpeakerResponse(
       uuid,

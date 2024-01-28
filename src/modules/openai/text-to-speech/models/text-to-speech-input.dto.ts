@@ -8,8 +8,4 @@ export class TextToSpeechInputDto {
   @IsString()
   @IsNotEmpty()
   voice: string;
-
-  @IsString()
-  @IsNotEmpty()
-  model: string;
 }

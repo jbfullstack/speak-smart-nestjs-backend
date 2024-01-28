@@ -13,6 +13,6 @@ export class TextToSpeechController {
     data: TextToSpeechInputDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.service.textToSpeech(data);
+    return this.service.textToSpeech(data.input, data.voice);
   }
 }

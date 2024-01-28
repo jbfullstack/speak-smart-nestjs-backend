@@ -7,8 +7,9 @@ import {
 import { ChatGptApiService } from 'src/modules/openai/chat-gpt-api/chat-gpt-api.service';
 import { TextToSpeechService } from 'src/modules/openai/text-to-speech/text-to-speech.service';
 import {
-  ChatWithSpeakerInputDTO,
+  TextChatWithSpeakerInputDTO,
   CreateSpeakerSessionInputDTO,
+  VerbalChatWithSpeakerInputDTO,
 } from './model/speaker.dto';
 import { TextToSpeechInputDto } from 'src/modules/openai/text-to-speech/models/text-to-speech-input.dto';
 
@@ -19,10 +20,7 @@ import * as ffmpeg from 'fluent-ffmpeg';
 import { OpenAIApi, Configuration } from 'openai';
 import { AxiosResponse } from 'axios';
 import { ChatSecurityService } from '../chat/chat-security/chat-security.service';
-import { ChatPersonality } from './structures/chat-personality';
-
-const DEFAULT_MALE_VOICE = 'onyx';
-const DEFAULT_FEMALE_VOICE = 'shimmer';
+import { ChatPersonality } from './struct/chat-personality';
 
 @Injectable()
 export class SpeakerService {
@@ -39,31 +37,6 @@ export class SpeakerService {
       apiKey: process.env.OPENAI_API_KEY,
     });
     this.openAiApi = new OpenAIApi(configuration);
-  }
-  // TODO: use postgres
-  getSPeakerVoice(voice: string): string {
-    return voice;
-  }
-
-  buildSessionData(data: CreateSpeakerSessionInputDTO) {
-    const sessionData = {
-      ...data,
-      systemMessage: this.getSystemMessageWithPersonality(
-        data.userName,
-        data.speakerCharacter,
-      ),
-    };
-
-    return sessionData;
-  }
-
-  // TODO: Use mapper
-  getSystemMessageWithPersonality(userName: string, personality: string) {
-    let prompt = this.loadPromptFile();
-    const chatPersonality = ChatPersonality.getInstance();
-    return `${prompt}. ${chatPersonality.getPersonalityDescription(
-      personality,
-    )}.My username is '${userName}'. Call me '${userName}' when you need to address me or if I ask you my name.`;
   }
 
   private loadPromptFile(): string {
@@ -85,11 +58,31 @@ export class SpeakerService {
     }
   }
 
-  async getWrittenSpeakerResponse(
+  getSystemMessageWithPersonality(userName: string, personality: string) {
+    let prompt = this.loadPromptFile();
+    const chatPersonality = ChatPersonality.getInstance();
+    return `${prompt}. ${chatPersonality.getPersonalityDescription(
+      personality,
+    )}.My username is '${userName}'. Call me '${userName}' when you need to address me or if I ask you my name.`;
+  }
+
+  buildSessionData(data: CreateSpeakerSessionInputDTO) {
+    const sessionData = {
+      ...data,
+      systemMessage: this.getSystemMessageWithPersonality(
+        data.userName,
+        data.speakerCharacter,
+      ),
+    };
+
+    return sessionData;
+  }
+
+  async getAiResponse(
     uuid: string,
     userName: string,
-    data: ChatWithSpeakerInputDTO,
-  ) {
+    data: TextChatWithSpeakerInputDTO,
+  ): Promise<string> {
     const gptResponse =
       await this.chatService.getAiModelResponseFromUserSession(
         uuid,
@@ -105,33 +98,25 @@ export class SpeakerService {
       : 'we are sorry, an inacceptable message was generated.';
   }
 
+  async getWrittenSpeakerResponse(
+    uuid: string,
+    userName: string,
+    data: TextChatWithSpeakerInputDTO,
+  ): Promise<string> {
+    return this.getAiResponse(uuid, userName, data);
+  }
+
   async getSpokenpeakerResponse(
     uuid: string,
     userName: string,
-    data: ChatWithSpeakerInputDTO,
+    data: VerbalChatWithSpeakerInputDTO,
     isRecording: boolean = false,
   ) {
-    const gptResponse =
-      await this.chatService.getAiModelResponseFromUserSession(
-        uuid,
-        userName,
-        data,
-      );
-
-    const isAiMessageAcceptable = await this.chatSecurity.controleMessage(
-      gptResponse.aiMessage,
-    );
-    const textToGenerate = isAiMessageAcceptable
-      ? gptResponse.aiMessage
-      : 'we are sorry, an inacceptable message was generated.';
-    const textToSpeechInput: TextToSpeechInputDto = {
-      model: 'tts-1',
-      voice: this.getSPeakerVoice(data.voice),
-      input: textToGenerate,
-    };
+    const textToGenerate = await this.getAiResponse(uuid, userName, data);
 
     const audioStream = await this.textToSpeechService.textToSpeech(
-      textToSpeechInput,
+      textToGenerate,
+      data.voice,
     );
 
     if (isRecording) {
